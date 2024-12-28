@@ -48,6 +48,53 @@ class Dungeon():
 
             self.graph.edges[edge]['locked'] = locked
 
+    # Gets the shortest completion path of the dungeon (reaching the finish from the start, getting only the required keys)
+    def shortest_path_least_keys(self):
+        graph = self.graph.to_undirected() # undirected because in real play you can go in any direction
+
+        # TODO
+
+        pass
+
+    # Calculates fitness
+    def fitness(self):
+        value = 0
+
+        start_nodes = [node for node, attr in self.graph.nodes(data=True) if attr.get('type') == Types.START]
+        finish_nodes = [node for node, attr in self.graph.nodes(data=True) if attr.get('type') == Types.FINISH]
+
+        # Validity criterion #1: one and only one start room and finish room
+        if len(start_nodes) != 1 or len(finish_nodes) != 1:
+            return -100
+
+        start_node = start_nodes[0]
+        finish_node = finish_nodes[0]
+
+        # Validity criterion #2: the finish room has one and only one entrance, and no exits
+        if len(self.graph.in_edges(finish_node)) != 1 or len(self.graph.out_edges(finish_node)) != 0:
+            return -50
+
+        locked_edges = [edge for edge, attr in self.graph.edges(data=True) if attr.get('locked')]
+
+        # Penalty criterion #1: the number of locked edges must be around 1/3 of number of rooms
+        value -= abs((NUM_ROOMS // 3) - len(locked_edges)) * 5
+
+        # Penalty criterion #2: the number of edges must be around the number of rooms + 33%
+        value -= abs(len(self.graph.edges) - (NUM_ROOMS + (NUM_ROOMS // 3))) * 2
+
+        for node in self.graph.nodes:
+            in_edges = self.graph.in_edges(node, data=True)
+
+            # Reward criterion #1: more edges a node has, more that room is meaningful, but never more than 4 edges
+            interconnection_factor = len(in_edges) + self.graph.out_degree(node)
+            if interconnection_factor > 4:
+                value -= 25
+            else:
+                value += interconnection_factor * 2
+
+        return value
+
+    # Prints an individual
     def print(self):
         print(self.graph)
 
