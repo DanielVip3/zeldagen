@@ -4,7 +4,7 @@ import random
 from matplotlib import pyplot as plt
 import networkx as nx
 
-class Dungeon():
+class Dungeon:
     # Generates a new dungeon randomly
     def __init__(self):
         # Generate random rooted tree with labels 0 .. K-1, where 0 is the root
@@ -49,12 +49,78 @@ class Dungeon():
             self.graph.edges[edge]['locked'] = locked
 
     # Gets the shortest completion path of the dungeon (reaching the finish from the start, getting only the required keys)
-    def shortest_path_least_keys(self):
-        graph = self.graph.to_undirected() # undirected because in real play you can go in any direction
+    def shortest_path_least_keys(
+        self,
+        start,                  # the start node from which to compute the shortest path
+        und_graph      = None,  # the undirected graph we've generated the first time, to avoid recomputing it again
+        keys           = 0,     # the number of keys we've got at this point of the search
+        excluded       = None,  # a set of nodes we excluded from exploring until now (we've already explored them, or they're dead ends)
+        unlocked       = None,  # a set of edges we've already unlocked until now
+        path           = None   # an ordered list of nodes, representing the complete path until now
+    ):
+        excluded = excluded or {}
+        unlocked = unlocked or {}
+        path = path or []
 
-        # TODO
+        if und_graph is None:
+            und_graph = self.graph.to_undirected() # undirected because in real play you can go in any direction
+            path = [start]
 
-        pass
+        shortest_path = None
+        for (u, v) in und_graph.edges(start): # tries all possible immediate paths from current room
+            if v in excluded: # ... except excluded ones
+                continue
+
+            # u represents the source room, v the destination room
+
+            # we create clones of the state, for this specific branch (path tried)
+            keys_branch = keys
+            excluded_branch = list(excluded)
+            unlocked_branch = list(unlocked)
+            path_until_now_branch = list(path)
+
+            edge_locked = und_graph[u][v]['locked'] # whether this edge is locked
+            destination_room_type = und_graph.nodes[v]['type'] # the type of the destination room
+
+            # first, we'll have to check if the path is unlocked, otherwise nothing to do
+
+            can_go = not edge_locked # whether the path's unlocked (we can proceed) or not
+            if not can_go: # if the edge is locked...
+                if (u, v) in unlocked: # ... we either unlocked it before
+                    can_go = True
+                elif keys > 0: # ... or we need a key
+                    keys_branch -= 1
+                    unlocked_branch += [(u, v)] # and we unlock it for later
+                    can_go = True
+
+            if can_go: # if the path is unlocked, we can try to proceed from there
+                path_until_now_branch += [v] # we proceed, by adding the destination room to the path
+
+                # if our destination room is the boss room, we've reached the end
+                if destination_room_type == Types.FINISH:
+                    return path_until_now_branch
+
+                # if our destination room is a key, we have one more key now, and it's
+                # a good idea to try backtracking (so we don't exclude the source room)
+                if destination_room_type == Types.KEY:
+                    keys_branch += 1
+                else: # we exclude the source room, because it makes no sense to return back if we have no new keys
+                    excluded_branch += [u]
+
+                # if the destination node is a dead end, we exclude it, it'll be useless to return later
+                if und_graph.degree(v) <= 1:
+                    excluded_branch += [v]
+
+                # we get the shortest path now starting from the destination room
+                path_branch = self.shortest_path_least_keys(v, und_graph, keys_branch, excluded_branch, unlocked_branch, path_until_now_branch)
+                if path_branch is None:
+                    continue
+
+                # we update the final shortest path only if the path we found here was shorter
+                if shortest_path is None or len(path_branch) < len(shortest_path):
+                    shortest_path = path_branch
+
+        return shortest_path
 
     # Calculates fitness
     def fitness(self):
@@ -67,7 +133,7 @@ class Dungeon():
         if len(start_nodes) != 1 or len(finish_nodes) != 1:
             return -100
 
-        start_node = start_nodes[0]
+        # unused: start_node = start_nodes[0]
         finish_node = finish_nodes[0]
 
         # Validity criterion #2: the finish room has one and only one entrance, and no exits
@@ -91,6 +157,8 @@ class Dungeon():
                 value -= 25
             else:
                 value += interconnection_factor * 2
+
+        # TODO: add criteria for solvability, difficulty and linearity
 
         return value
 
