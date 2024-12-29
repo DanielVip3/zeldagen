@@ -50,9 +50,6 @@ class Dungeon:
 
         self.fitness_cached = None
 
-    def leaves(self):
-        return [node for node in self.graph.nodes if self.graph.out_degree(node) == 0]
-
     # Gets the shortest completion path of the dungeon (reaching the finish from the start, getting only the required keys)
     def shortest_path_least_keys(
         self,
@@ -148,7 +145,7 @@ class Dungeon:
         if len(self.graph.in_edges(finish_node)) != 1 or len(self.graph.out_edges(finish_node)) != 0:
             return -50
 
-        locked_edges = [edge for edge, attr in self.graph.edges(data=True) if attr.get('locked')]
+        locked_edges = [(node1, node2) for node1, node2, attr in self.graph.edges(data=True) if attr.get('locked')]
 
         # Penalty criterion #1: the number of locked edges must be around 1/3 of number of rooms
         value -= abs((NUM_ROOMS // 3) - len(locked_edges)) * 5

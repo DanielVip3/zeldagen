@@ -2,7 +2,6 @@ from constants import Types, ROOT, FINISH, NUM_ROOMS
 from dungeon import Dungeon
 from copy import deepcopy
 import random
-
 import networkx as nx
 
 def selection(population, population_size):
@@ -13,8 +12,8 @@ def crossover(parent1, parent2):
     child1 = deepcopy(parent1)
     child2 = deepcopy(parent2)
 
-    child1_leaves = child1.leaves()
-    child2_leaves = child2.leaves()
+    child1_leaves = [node for node, attr in child1.graph.nodes(data=True) if child1.graph.out_degree(node) == 0 and attr.get('type') != Types.FINISH]
+    child2_leaves = [node for node, attr in child2.graph.nodes(data=True) if child2.graph.out_degree(node) == 0 and attr.get('type') != Types.FINISH]
 
     if not child1_leaves or not child2_leaves:
         return child1, child2
@@ -22,8 +21,14 @@ def crossover(parent1, parent2):
     random_leaf1 = random.choice(child1_leaves)
     random_leaf2 = random.choice(child2_leaves)
 
-    random_leaf1_predecessor = random.choice(list(child1.graph.predecessors(random_leaf1)))
-    random_leaf2_predecessor = random.choice(list(child2.graph.predecessors(random_leaf2)))
+    leaf1_predecessors = list(child1.graph.predecessors(random_leaf1))
+    leaf2_predecessors = list(child2.graph.predecessors(random_leaf2))
+
+    if not leaf1_predecessors or not leaf2_predecessors:
+        return child1, child2
+
+    random_leaf1_predecessor = random.choice(leaf1_predecessors)
+    random_leaf2_predecessor = random.choice(leaf2_predecessors)
 
     leaf1_type = child1.graph.nodes[random_leaf1]['type']
     leaf2_type = child2.graph.nodes[random_leaf2]['type']
@@ -68,7 +73,9 @@ def mutation(individual):
                 continue
 
             possible_edges = [(node1, node2) for node1, node2, attr in individual.graph.edges(data=True)
-                              if individual.graph.nodes[node2]['type'] != Types.FINISH and individual.graph.in_degree(node2) > 1]
+                              if individual.graph.nodes[node1]['type'] != Types.START
+                              and individual.graph.nodes[node2]['type'] != Types.FINISH
+                              and individual.graph.in_degree(node2) > 1]
             if not possible_edges:
                 continue
 
@@ -89,14 +96,40 @@ def mutation(individual):
             individual.graph.edges[edge]['locked'] = to_lock
         break
 
-def genetic_algorithm(population_size = 10):
+    return individual
+
+def genetic_algorithm(generations = 1000, population_size = 10, elite_size = 3):
     # Initialize population
     population = [Dungeon() for i in range(population_size)]
 
-genetic_algorithm()
+    for gen in range(generations): # for each generation
+        new_population = []
 
-d1 = Dungeon()
-d1.print()
-mutation(d1)
-d1.print()
-# print(d.shortest_path_least_keys(0))
+        # Elitism: select the top 'elite_size' individuals
+        population.sort(key=lambda ind: ind.fitness(), reverse=True)
+        elite_individuals = population[:elite_size]
+
+        # Generate the new generation
+        while len(new_population) < (population_size - elite_size):
+            # Selection: two of them for crossover (using tournament selection)
+            parent1 = selection(population, population_size)
+            parent2 = selection(population, population_size)
+
+            # Cross-over
+            child1, child2 = crossover(parent1, parent2)
+
+            # Mutation
+            child1 = mutation(child1)
+            child2 = mutation(child2)
+
+            new_population.extend([child1, child2])
+
+        new_population.extend(elite_individuals)
+
+        # Replace old population
+        population = new_population
+
+    return max(population, key=lambda ind: ind.fitness())
+
+best_individual = genetic_algorithm()
+best_individual.print()
