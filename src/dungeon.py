@@ -48,7 +48,10 @@ class Dungeon:
 
             self.graph.edges[edge]['locked'] = locked
 
-        self.fitness_cached = self.fitness()
+        self.fitness_cached = None
+
+    def leaves(self):
+        return [node for node in self.graph.nodes if self.graph.out_degree(node) == 0]
 
     # Gets the shortest completion path of the dungeon (reaching the finish from the start, getting only the required keys)
     def shortest_path_least_keys(
