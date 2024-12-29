@@ -48,6 +48,8 @@ class Dungeon:
 
             self.graph.edges[edge]['locked'] = locked
 
+        self.fitness_cached = self.fitness()
+
     # Gets the shortest completion path of the dungeon (reaching the finish from the start, getting only the required keys)
     def shortest_path_least_keys(
         self,
@@ -123,7 +125,10 @@ class Dungeon:
         return shortest_path
 
     # Calculates fitness
-    def fitness(self):
+    def fitness(self, cache_clear = False):
+        if not cache_clear and self.fitness_cached is not None: # computing fitness is expensive, we cache it
+            return self.fitness_cached
+
         value = 0
 
         start_nodes = [node for node, attr in self.graph.nodes(data=True) if attr.get('type') == Types.START]
@@ -160,6 +165,7 @@ class Dungeon:
 
         # TODO: add criteria for solvability, difficulty and linearity
 
+        self.fitness_cached = value
         return value
 
     # Prints an individual
