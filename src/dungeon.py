@@ -1,6 +1,8 @@
 from constants import ROOT, NUM_ROOMS, Types
 
+from collections import Counter
 import random
+from math import exp
 from matplotlib import pyplot as plt
 import networkx as nx
 
@@ -163,7 +165,19 @@ class Dungeon:
             else:
                 value += interconnection_factor * 2
 
-        # TODO: add criteria for solvability, difficulty and linearity
+        # Calculating the shortest path solution to account for solvability, difficulty and linearity
+        solution = self.shortest_path_least_keys(ROOT)
+
+        # Validity criterion #3: the dungeon is solvable
+        if solution is None or len(solution) == 0:
+            return -100
+
+        # Reward criterion #2: the dungeon's difficulty is balanced (number of rooms required is around half the dungeon)
+        value += 5 * round(exp(-NUM_ROOMS * pow((len(solution) - (NUM_ROOMS // 2)) / (NUM_ROOMS // 2), 2)), 2)
+
+        # Reward criterion #3: the dungeon is enough non-linear, but not too much
+        backtracking_factor = sum(1 for count in Counter(solution).values() if count > 1) # number of unique repetitions
+        value += 5 * round(exp(-(NUM_ROOMS // 2) * pow((backtracking_factor - (NUM_ROOMS // 3)) / (NUM_ROOMS // 3), 2)), 2)
 
         self.fitness_cached = value
         return value
