@@ -60,10 +60,12 @@ class Dungeon:
         keys           = 0,     # the number of keys we've got at this point of the search
         excluded       = None,  # a set of nodes we excluded from exploring until now (we've already explored them, or they're dead ends)
         unlocked       = None,  # a set of edges we've already unlocked until now
+        keys_taken     = None,  # a set of keys we've already taken (to avoid key loops)
         path           = None   # an ordered list of nodes, representing the complete path until now
     ):
-        excluded = excluded or {}
-        unlocked = unlocked or {}
+        excluded = excluded or set()
+        unlocked = unlocked or set()
+        keys_taken = keys_taken or set()
         path = path or []
 
         if und_graph is None:
@@ -79,8 +81,9 @@ class Dungeon:
 
             # we create clones of the state, for this specific branch (path tried)
             keys_branch = keys
-            excluded_branch = list(excluded)
-            unlocked_branch = list(unlocked)
+            excluded_branch = set(excluded)
+            unlocked_branch = set(unlocked)
+            keys_taken_branch = set(keys_taken)
             path_until_now_branch = list(path)
 
             edge_locked = und_graph[u][v]['locked'] # whether this edge is locked
@@ -94,11 +97,11 @@ class Dungeon:
                     can_go = True
                 elif keys > 0: # ... or we need a key
                     keys_branch -= 1
-                    unlocked_branch += [(u, v)] # and we unlock it for later
+                    unlocked_branch.add((u, v)) # and we unlock it for later
                     can_go = True
 
             if can_go: # if the path is unlocked, we can try to proceed from there
-                path_until_now_branch += [v] # we proceed, by adding the destination room to the path
+                path_until_now_branch.append(v) # we proceed, by adding the destination room to the path
 
                 # if our destination room is the boss room, we've reached the end
                 if destination_room_type == Types.FINISH:
@@ -106,17 +109,19 @@ class Dungeon:
 
                 # if our destination room is a key, we have one more key now, and it's
                 # a good idea to try backtracking (so we don't exclude the source room)
-                if destination_room_type == Types.KEY:
+                # - we have to check for keys we already took before, though
+                if destination_room_type == Types.KEY and v not in keys_taken_branch:
                     keys_branch += 1
+                    keys_taken_branch.add(v)
                 else: # we exclude the source room, because it makes no sense to return back if we have no new keys
-                    excluded_branch += [u]
+                    excluded_branch.add(u)
 
                 # if the destination node is a dead end, we exclude it, it'll be useless to return later
                 if und_graph.degree(v) <= 1:
-                    excluded_branch += [v]
+                    excluded_branch.add(v)
 
                 # we get the shortest path now starting from the destination room
-                path_branch = self.shortest_path_least_keys(v, und_graph, keys_branch, excluded_branch, unlocked_branch, path_until_now_branch)
+                path_branch = self.shortest_path_least_keys(v, und_graph, keys_branch, excluded_branch, unlocked_branch, keys_taken_branch, path_until_now_branch)
                 if path_branch is None:
                     continue
 
@@ -165,22 +170,26 @@ class Dungeon:
             else:
                 value += interconnection_factor * 2
 
-        # Calculating the shortest path solution to account for solvability, difficulty and linearity
-        solution = self.shortest_path_least_keys(ROOT)
+        try:
+            # Calculating the shortest path solution to account for solvability, difficulty and linearity
+            solution = self.shortest_path_least_keys(ROOT)
 
-        # Validity criterion #3: the dungeon is solvable
-        if solution is None or len(solution) == 0:
-            return -100
+            # Validity criterion #3: the dungeon is solvable
+            if solution is None or len(solution) == 0:
+                return -100
 
-        # Reward criterion #2: the dungeon's difficulty is balanced (number of rooms required is around half the dungeon)
-        value += 5 * round(exp(-NUM_ROOMS * pow((len(solution) - (NUM_ROOMS // 2)) / (NUM_ROOMS // 2), 2)), 2)
+            # Reward criterion #2: the dungeon's difficulty is balanced (number of rooms required is around half the dungeon)
+            value += 5 * round(exp(-NUM_ROOMS * pow((len(solution) - (NUM_ROOMS // 2)) / (NUM_ROOMS // 2), 2)), 2)
 
-        # Reward criterion #3: the dungeon is enough non-linear, but not too much
-        backtracking_factor = sum(1 for count in Counter(solution).values() if count > 1) # number of unique repetitions
-        value += 5 * round(exp(-(NUM_ROOMS // 2) * pow((backtracking_factor - (NUM_ROOMS // 3)) / (NUM_ROOMS // 3), 2)), 2)
+            # Reward criterion #3: the dungeon is enough non-linear, but not too much
+            backtracking_factor = sum(1 for count in Counter(solution).values() if count > 1) # number of unique repetitions
+            value += 5 * round(exp(-(NUM_ROOMS // 2) * pow((backtracking_factor - (NUM_ROOMS // 3)) / (NUM_ROOMS // 3), 2)), 2)
 
-        self.fitness_cached = value
-        return value
+            self.fitness_cached = value
+            return value
+        except RecursionError:
+            self.print()
+            raise RecursionError("aaa")
 
     # Prints an individual
     def print(self):
