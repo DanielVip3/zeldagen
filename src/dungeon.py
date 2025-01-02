@@ -5,50 +5,54 @@ import random
 from math import exp
 from matplotlib import pyplot as plt
 import networkx as nx
+from copy import deepcopy
 
 class Dungeon:
     # Generates a new dungeon randomly
-    def __init__(self):
-        # Generate random rooted tree with labels 0 .. K-1, where 0 is the root
-        self.graph = nx.random_labeled_rooted_tree(NUM_ROOMS)
+    def __init__(self, graph=None):
+        if not graph:
+            # Generate random rooted tree with labels 0 .. K-1, where 0 is the root
+            self.graph = nx.random_labeled_rooted_tree(NUM_ROOMS)
 
-        # Does BFS on the tree, to make it oriented
-        self.graph = nx.bfs_tree(self.graph, ROOT)
+            # Does BFS on the tree, to make it oriented
+            self.graph = nx.bfs_tree(self.graph, ROOT)
 
-        # Root will be the start
-        self.graph.nodes[ROOT]['type'] = Types.START
+            # Root will be the start
+            self.graph.nodes[ROOT]['type'] = Types.START
 
-        # The middle rooms (between 1 and K-2) will be randomly normal rooms and key rooms
-        for i in range(1, NUM_ROOMS - 1):
-            self.graph.nodes[i]['type'] = random.choice([Types.NORMAL, Types.KEY])
+            # The middle rooms (between 1 and K-2) will be randomly normal rooms and key rooms
+            for i in range(1, NUM_ROOMS - 1):
+                self.graph.nodes[i]['type'] = random.choice([Types.NORMAL, Types.KEY])
 
-        # The last room will be the finish
-        self.graph.nodes[NUM_ROOMS - 1]['type'] = Types.FINISH
+            # The last room will be the finish
+            self.graph.nodes[NUM_ROOMS - 1]['type'] = Types.FINISH
 
-        # The last room needs to have only a single entrance (in-edge)
-        final_edge = None
-        for edge in self.graph.in_edges(NUM_ROOMS - 1):
-            if not final_edge:
-                final_edge = edge
-            else:
-                self.graph.remove_edge(*edge)
+            # The last room needs to have only a single entrance (in-edge)
+            final_edge = None
+            for edge in self.graph.in_edges(NUM_ROOMS - 1):
+                if not final_edge:
+                    final_edge = edge
+                else:
+                    self.graph.remove_edge(*edge)
 
-        # The single entrance of the final room needs to be locked
-        self.graph.edges[final_edge]['locked'] = True
+            # The single entrance of the final room needs to be locked
+            self.graph.edges[final_edge]['locked'] = True
 
-        # For each remaining edge, it is randomly selected to be locked or not, up to a maximum of (number of rooms - 2)
-        # (because all rooms except start and finish can be key rooms)
-        locked_num = 1
-        for edge in (self.graph.edges - [final_edge]):
-            if locked_num >= (NUM_ROOMS - 2):
-                break
+            # For each remaining edge, it is randomly selected to be locked or not, up to a maximum of (number of rooms - 2)
+            # (because all rooms except start and finish can be key rooms)
+            locked_num = 1
+            for edge in (self.graph.edges - [final_edge]):
+                if locked_num >= (NUM_ROOMS - 2):
+                    break
 
-            locked = random.random() < 0.5
+                locked = random.random() < 0.5
 
-            if locked:
-                locked_num += 1
+                if locked:
+                    locked_num += 1
 
-            self.graph.edges[edge]['locked'] = locked
+                self.graph.edges[edge]['locked'] = locked
+        else:
+            self.graph = graph
 
         self.fitness_cached = None
 
@@ -56,7 +60,7 @@ class Dungeon:
     def shortest_path_least_keys(
         self,
         start,                  # the start node from which to compute the shortest path
-        und_graph      = None,  # the undirected graph we've generated the first time, to avoid recomputing it again
+        und_graph      = None,  # the undirected graph
         keys           = 0,     # the number of keys we've got at this point of the search
         excluded       = None,  # a set of nodes we excluded from exploring until now (we've already explored them, or they're dead ends)
         unlocked       = None,  # a set of edges we've already unlocked until now
@@ -67,10 +71,6 @@ class Dungeon:
         unlocked = unlocked or set()
         keys_taken = keys_taken or set()
         path = path or []
-
-        if und_graph is None:
-            und_graph = self.graph.to_undirected() # undirected because in real play you can go in any direction
-            path = [start]
 
         shortest_path = None
         for (u, v) in und_graph.edges(start): # tries all possible immediate paths from current room
@@ -141,13 +141,13 @@ class Dungeon:
 
         value = 0
 
-        graph_und = self.graph.to_undirected()
+        graph_und = self.to_undirected()
 
         start_nodes = []
         finish_nodes = []
         key_nodes = []
 
-        for node, attr in self.graph.nodes(data=True):
+        for node, attr in self.nodes(data=True):
             if attr.get('type') == Types.START:
                 start_nodes.append(node)
             elif attr.get('type') == Types.FINISH:
@@ -163,33 +163,33 @@ class Dungeon:
         finish_node = finish_nodes[0]
 
         # Validity criterion #3: the finish room has one and only one entrance, and no exits
-        if len(self.graph.in_edges(finish_node)) != 1 or len(self.graph.out_edges(finish_node)) != 0:
+        if len(self.in_edges(finish_node)) != 1 or len(self.out_edges(finish_node)) != 0:
             return -50
 
-        locked_edges = [(node1, node2) for node1, node2, attr in self.graph.edges(data=True) if attr.get('locked')]
+        locked_edges = [(node1, node2) for node1, node2, attr in self.edges(data=True) if attr.get('locked')]
 
         # Penalty criterion #1: the number of locked edges must be around 1/3 of number of rooms
         value -= abs((NUM_ROOMS // 3) - len(locked_edges)) * 5
 
         # Penalty criterion #2: the number of edges must be around the number of rooms + 33%
-        value -= abs(len(self.graph.edges) - (NUM_ROOMS + (NUM_ROOMS // 3))) * 2
+        value -= abs(len(self.edges) - (NUM_ROOMS + (NUM_ROOMS // 3))) * 2
 
         # Penalty criterion #3: the shortest path distance between start and finish room must be at least 2
         if nx.shortest_path_length(graph_und, start_node, finish_node) < 2:
             return -15
 
-        for node in self.graph.nodes:
-            in_edges = self.graph.in_edges(node, data=True)
+        for node in self.nodes:
+            in_edges = self.in_edges(node, data=True)
 
             # Reward criterion #1: more edges a node has, more that room is meaningful, but never more than 4 edges
-            interconnection_factor = len(in_edges) + self.graph.out_degree(node)
+            interconnection_factor = len(in_edges) + self.out_degree(node)
             if interconnection_factor > 4:
                 value -= 25
             else:
                 value += interconnection_factor * 2
 
         # Calculating the shortest path solution to account for solvability, difficulty and linearity
-        solution = self.shortest_path_least_keys(ROOT, graph_und)
+        solution = self.shortest_path_least_keys(ROOT, graph_und) # undirected graph because in real play you can go in any direction
 
         # Validity criterion #4: the dungeon is solvable
         if solution is None or len(solution) == 0:
@@ -200,7 +200,7 @@ class Dungeon:
 
         # Reward criterion #3: the dungeon is enough non-linear, but not too much
         backtracking_factor = sum(1 for count in Counter(solution).values() if count > 1) # number of unique repetitions
-        value += 5 * round(exp(-(NUM_ROOMS // 2) * pow((backtracking_factor - (NUM_ROOMS // 3)) / (NUM_ROOMS // 3), 2)), 2)
+        value += 5 * round(exp(-(NUM_ROOMS // 2) * pow((backtracking_factor - (NUM_ROOMS // 4)) / (NUM_ROOMS // 4), 2)), 2)
 
         # Reward criterion #4: the number of key rooms is around the number of locked edges
         value += 5 * round(exp(-NUM_ROOMS * pow((len(key_nodes) - len(locked_edges)) / (len(locked_edges)), 2)), 2)
@@ -233,3 +233,16 @@ class Dungeon:
         nx.draw_networkx_edge_labels(self.graph, label_pos, edge_labels=edge_labels, font_size=12, font_color='black', verticalalignment="center")
 
         plt.show()
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls(deepcopy(self.graph))
+        return result
+
+    # Delegate attribute access to the internal graph object, for ease of use, akin to inheritance
+    def __getattr__(self, name):
+        if name == "graph":
+            return self.graph
+        elif hasattr(self.graph, name):
+            return getattr(self.graph, name)
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
