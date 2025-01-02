@@ -59,12 +59,13 @@ def mutation(individual):
             if len(individual.graph.edges) >= (NUM_ROOMS + (NUM_ROOMS // 3)):
                 continue
 
-            node = random.choice(range(ROOT + 1, FINISH))
+            node = random.choice(range(ROOT, FINISH))
 
-            connected = set(nx.all_neighbors(individual.graph, node))
-            connected.add(node)
-
-            possible_connections = [node for node, attr in individual.graph.nodes(data=True) if node not in connected and attr.get('type') not in [Types.START, Types.FINISH]]
+            possible_connections = [poss_node for poss_node, attr in individual.graph.nodes(data=True)
+                                    if attr.get('type') != Types.FINISH
+                                    and node != poss_node
+                                    and not individual.graph.has_edge(poss_node, node)
+                                    and not individual.graph.has_edge(node, poss_node)]
             if not possible_connections:
                 continue
 
@@ -138,5 +139,5 @@ def genetic_algorithm(generations = 500, population_size = 15, elite_size = 3):
 
     return max(population, key=lambda ind: ind.fitness())
 
-best_individual = genetic_algorithm()
+best_individual = genetic_algorithm(250)
 best_individual.print()
