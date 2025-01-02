@@ -10,7 +10,7 @@ class Dungeon:
     # Generates a new dungeon randomly
     def __init__(self):
         # Generate random rooted tree with labels 0 .. K-1, where 0 is the root
-        self.graph = nx.random_labeled_rooted_tree(NUM_ROOMS, seed=1234)
+        self.graph = nx.random_labeled_rooted_tree(NUM_ROOMS)
 
         # Does BFS on the tree, to make it oriented
         self.graph = nx.bfs_tree(self.graph, ROOT)
@@ -200,11 +200,11 @@ class Dungeon:
         for edge in edge_labels:
             edge_labels[edge] = "L" if edge_labels[edge] else ""
 
-        pos = nx.bfs_layout(self.graph, ROOT, scale=0.5)
+        pos = nx.nx_agraph.graphviz_layout(self.graph, prog="dot") # , scale=0.5
         label_pos = {}
 
         for k, v in pos.items():
-            label_pos[k] = (v[0], v[1] + 0.05)
+            label_pos[k] = (v[0], v[1] + 15)
 
         nx.draw(self.graph, pos, with_labels=True, node_color='skyblue', node_size=500, font_size=15, font_weight='bold')
 
