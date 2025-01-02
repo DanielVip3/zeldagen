@@ -5,12 +5,15 @@ import random
 import networkx as nx
 
 def selection(population, population_size):
-    tournament = random.sample(population, population_size // 3)
+    tournament = random.sample(population, population_size // 4)
     return sorted(tournament, key=lambda ind: ind.fitness(), reverse=True)[0]
 
 def crossover(parent1, parent2):
     child1 = deepcopy(parent1)
     child2 = deepcopy(parent2)
+
+    child1.clear_fitness_cache()
+    child2.clear_fitness_cache()
 
     child1_leaves = [node for node, attr in child1.graph.nodes(data=True) if child1.graph.out_degree(node) == 0 and attr.get('type') != Types.FINISH]
     child2_leaves = [node for node, attr in child2.graph.nodes(data=True) if child2.graph.out_degree(node) == 0 and attr.get('type') != Types.FINISH]
@@ -72,10 +75,13 @@ def mutation(individual):
             if len(individual.graph.edges) < (NUM_ROOMS + (NUM_ROOMS // 3)):
                 continue
 
+            bridges = list(nx.bridges(individual.graph.to_undirected()))
+
             possible_edges = [(node1, node2) for node1, node2, attr in individual.graph.edges(data=True)
                               if individual.graph.nodes[node1]['type'] != Types.START
                               and individual.graph.nodes[node2]['type'] != Types.FINISH
-                              and individual.graph.in_degree(node2) > 1]
+                              and (node1, node2) not in bridges
+                              and (node2, node1) not in bridges]
             if not possible_edges:
                 continue
 
@@ -96,9 +102,10 @@ def mutation(individual):
             individual.graph.edges[edge]['locked'] = to_lock
         break
 
+    individual.clear_fitness_cache()
     return individual
 
-def genetic_algorithm(generations = 1000, population_size = 10, elite_size = 3):
+def genetic_algorithm(generations = 500, population_size = 15, elite_size = 3):
     # Initialize population
     population = [Dungeon() for i in range(population_size)]
 

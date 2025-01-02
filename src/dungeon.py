@@ -131,6 +131,9 @@ class Dungeon:
 
         return shortest_path
 
+    def clear_fitness_cache(self):
+        self.fitness_cached = None
+
     # Calculates fitness
     def fitness(self, cache_clear = False):
         if not cache_clear and self.fitness_cached is not None: # computing fitness is expensive, we cache it
