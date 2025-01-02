@@ -141,14 +141,25 @@ class Dungeon:
 
         value = 0
 
-        start_nodes = [node for node, attr in self.graph.nodes(data=True) if attr.get('type') == Types.START]
-        finish_nodes = [node for node, attr in self.graph.nodes(data=True) if attr.get('type') == Types.FINISH]
+        graph_und = self.graph.to_undirected()
+
+        start_nodes = []
+        finish_nodes = []
+        key_nodes = []
+
+        for node, attr in self.graph.nodes(data=True):
+            if attr.get('type') == Types.START:
+                start_nodes.append(node)
+            elif attr.get('type') == Types.FINISH:
+                finish_nodes.append(node)
+            elif attr.get('type') == Types.KEY:
+                key_nodes.append(node)
 
         # Validity criterion #1 and #2: one and only one start room and finish room
         if len(start_nodes) != 1 or len(finish_nodes) != 1:
             return -100
 
-        # unused: start_node = start_nodes[0]
+        start_node = start_nodes[0]
         finish_node = finish_nodes[0]
 
         # Validity criterion #3: the finish room has one and only one entrance, and no exits
@@ -163,6 +174,10 @@ class Dungeon:
         # Penalty criterion #2: the number of edges must be around the number of rooms + 33%
         value -= abs(len(self.graph.edges) - (NUM_ROOMS + (NUM_ROOMS // 3))) * 2
 
+        # Penalty criterion #3: the shortest path distance between start and finish room must be at least 2
+        if nx.shortest_path_length(graph_und, start_node, finish_node) < 2:
+            return -15
+
         for node in self.graph.nodes:
             in_edges = self.graph.in_edges(node, data=True)
 
@@ -174,7 +189,7 @@ class Dungeon:
                 value += interconnection_factor * 2
 
         # Calculating the shortest path solution to account for solvability, difficulty and linearity
-        solution = self.shortest_path_least_keys(ROOT)
+        solution = self.shortest_path_least_keys(ROOT, graph_und)
 
         # Validity criterion #4: the dungeon is solvable
         if solution is None or len(solution) == 0:
@@ -186,6 +201,9 @@ class Dungeon:
         # Reward criterion #3: the dungeon is enough non-linear, but not too much
         backtracking_factor = sum(1 for count in Counter(solution).values() if count > 1) # number of unique repetitions
         value += 5 * round(exp(-(NUM_ROOMS // 2) * pow((backtracking_factor - (NUM_ROOMS // 3)) / (NUM_ROOMS // 3), 2)), 2)
+
+        # Reward criterion #4: the number of key rooms is around the number of locked edges
+        value += 5 * round(exp(-NUM_ROOMS * pow((len(key_nodes) - len(locked_edges)) / (len(locked_edges)), 2)), 2)
 
         self.fitness_cached = value
         return value
