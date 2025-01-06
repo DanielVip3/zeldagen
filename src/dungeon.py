@@ -43,7 +43,8 @@ class Dungeon:
             locked_num = 1
             for edge in (self.graph.edges - [final_edge]):
                 if locked_num >= (NUM_ROOMS - 2):
-                    break
+                    self.graph.edges[edge]['locked'] = False
+                    continue
 
                 locked = random.random() < 0.5
 
