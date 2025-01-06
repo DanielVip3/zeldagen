@@ -177,10 +177,16 @@ class Dungeon:
 
         # Penalty criterion #3: the shortest path distance between start and finish room must be at least 2
         if nx.shortest_path_length(graph_und, start_node, finish_node) < 2:
-            return -15
+            value -= 15
 
+        hub_rooms_count = 0
         for node in self.nodes:
             in_edges = self.in_edges(node, data=True)
+
+            # Penalty criterion #4: the starting room must not have more than 3 connections
+            if node == start_node:
+                if len(in_edges) > 3:
+                    value -= 15
 
             # Reward criterion #1: more edges a node has, more that room is meaningful, but never more than 4 edges
             interconnection_factor = len(in_edges) + self.out_degree(node)
@@ -188,6 +194,12 @@ class Dungeon:
                 value -= 25
             else:
                 value += interconnection_factor * 2
+
+                # Penalty criterion #5: we don't want to have too many "hub" rooms, they must be at most 1/5 of total number of rooms
+                if interconnection_factor > 4:
+                    hub_rooms_count += 1
+                    if hub_rooms_count > (NUM_ROOMS // 5):
+                        value -= 5
 
         # Calculating the shortest path solution to account for solvability, difficulty and linearity
         solution = self.shortest_path_least_keys(ROOT, graph_und) # undirected graph because in real play you can go in any direction
