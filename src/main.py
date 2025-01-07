@@ -106,7 +106,7 @@ def mutation(individual):
     individual.clear_fitness_cache()
     return individual
 
-def genetic_algorithm(generations = 500, population_size = 15, elite_size = 3):
+def genetic_algorithm(generations = 100, population_size = 15, elite_size = 3, benchmark = False):
     best = None
     best_on = 0
 
@@ -140,13 +140,17 @@ def genetic_algorithm(generations = 500, population_size = 15, elite_size = 3):
         # Replace old population
         population = new_population
 
-        new_best = max(population, key=lambda ind: ind.fitness())
-        if best is None or new_best.fitness() > best.fitness():
-            best = new_best
-            best_on = gen
+        if benchmark:
+            new_best = max(population, key=lambda ind: ind.fitness())
+            if best is None or new_best.fitness() > best.fitness():
+                best = new_best
+                best_on = gen
 
-    print(best, best_on, best.fitness())
+    if benchmark:
+        return best, best.fitness(), best_on
+
     return max(population, key=lambda ind: ind.fitness())
 
-best_individual = genetic_algorithm(250)
+
+best_individual = genetic_algorithm()
 best_individual.print()
