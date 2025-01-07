@@ -170,7 +170,7 @@ class Dungeon:
         locked_edges = [(node1, node2) for node1, node2, attr in self.edges(data=True) if attr.get('locked')]
 
         # Penalty criterion #1: the number of locked edges must be around 1/3 of number of rooms
-        value -= abs((NUM_ROOMS // 3) - len(locked_edges)) * 5
+        value -= abs((NUM_ROOMS // 3) - len(locked_edges)) * 2
 
         # Penalty criterion #2: the number of edges must be around the number of rooms + 33%
         value -= abs(len(self.edges) - (NUM_ROOMS + (NUM_ROOMS // 3))) * 2
@@ -185,7 +185,7 @@ class Dungeon:
 
             # Penalty criterion #4: the starting room must not have more than 3 connections
             if node == start_node:
-                if len(in_edges) > 3:
+                if (len(in_edges) + self.out_degree(node)) > 3:
                     value -= 15
 
             # Reward criterion #1: more edges a node has, more that room is meaningful, but never more than 4 edges
