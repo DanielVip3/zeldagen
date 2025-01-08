@@ -150,7 +150,3 @@ def genetic_algorithm(generations = 100, population_size = 15, elite_size = 3, b
         return best, best.fitness(), best_on
 
     return max(population, key=lambda ind: ind.fitness())
-
-
-best_individual = genetic_algorithm()
-best_individual.print()
