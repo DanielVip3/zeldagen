@@ -222,11 +222,15 @@ class Dungeon:
         return value
 
     # Prints an individual
-    def print(self):
-        print(self.graph)
+    def print(self, undirected=False):
+        graph = self.graph
+        if undirected:
+            graph = self.graph.to_undirected()
+        else:
+            print(graph)
 
-        node_labels = nx.get_node_attributes(self.graph, 'type')
-        edge_labels = nx.get_edge_attributes(self.graph, 'locked')
+        node_labels = nx.get_node_attributes(graph, 'type')
+        edge_labels = nx.get_edge_attributes(graph, 'locked')
 
         for node in node_labels:
             node_labels[node] = node_labels[node].name.upper()[0]
@@ -234,16 +238,16 @@ class Dungeon:
         for edge in edge_labels:
             edge_labels[edge] = "L" if edge_labels[edge] else ""
 
-        pos = nx.nx_agraph.graphviz_layout(self.graph, prog="dot") # , scale=0.5
+        pos = nx.nx_agraph.graphviz_layout(graph, prog="dot") # , scale=0.5
         label_pos = {}
 
         for k, v in pos.items():
             label_pos[k] = (v[0], v[1] + 15)
 
-        nx.draw(self.graph, pos, with_labels=True, node_color='skyblue', node_size=500, font_size=15, font_weight='bold')
+        nx.draw(graph, pos, with_labels=True, node_color='lightgreen', node_size=500, font_size=15, font_weight='bold')
 
-        nx.draw_networkx_labels(self.graph, label_pos, labels=node_labels, font_size=12, font_color='black', verticalalignment="center")
-        nx.draw_networkx_edge_labels(self.graph, label_pos, edge_labels=edge_labels, font_size=12, font_color='black', verticalalignment="center")
+        nx.draw_networkx_labels(graph, label_pos, labels=node_labels, font_size=12, font_color='black', verticalalignment="center")
+        nx.draw_networkx_edge_labels(graph, label_pos, edge_labels=edge_labels, font_size=12, font_color='black', verticalalignment="center")
 
         plt.show()
 
