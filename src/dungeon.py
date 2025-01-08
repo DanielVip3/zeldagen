@@ -242,13 +242,14 @@ class Dungeon:
         label_pos = {}
 
         for k, v in pos.items():
-            label_pos[k] = (v[0], v[1] + 15)
+            label_pos[k] = (v[0], v[1] + 20)
 
         nx.draw(graph, pos, with_labels=True, node_color='lightgreen', node_size=500, font_size=15, font_weight='bold')
 
         nx.draw_networkx_labels(graph, label_pos, labels=node_labels, font_size=12, font_color='black', verticalalignment="center")
         nx.draw_networkx_edge_labels(graph, label_pos, edge_labels=edge_labels, font_size=12, font_color='black', verticalalignment="center")
 
+        plt.title("Dungeon")
         plt.show()
 
     def __deepcopy__(self, memo):

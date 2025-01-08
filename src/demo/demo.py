@@ -3,7 +3,7 @@ import random
 from ollama import chat
 from ollama import ChatResponse
 from textual import work
-from textual.app import App, ComposeResult
+from textual.app import App
 from textual.message import Message
 from textual.widgets import Footer, Header, Button, Label, RichLog, Markdown, OptionList, LoadingIndicator
 from textual.containers import Grid, HorizontalGroup, VerticalScroll
@@ -78,16 +78,16 @@ class TopRightPanel(HorizontalGroup):
     doing = reactive("main")
     choices = reactive([])
 
-    def compose(self) -> ComposeResult:
+    def compose(self):
         yield VerticalScroll(
             Label("Waiting for narrative..."),
             classes="panel", id="actions_panel")
 
-    def on_mount(self) -> None:
+    def on_mount(self):
         container = self.query_one(VerticalScroll)
         container.border_title = "Actions"
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event):
         if self.doing == "action":
             option_list = self.query_one(OptionList)
 
@@ -126,16 +126,16 @@ class BottomLeftPanel(HorizontalGroup):
     thinking = reactive(False)
     answer = reactive("Waiting for an input...")
 
-    def compose(self) -> ComposeResult:
+    def compose(self):
         yield VerticalScroll(
             Markdown(self.answer, classes="textual_output", id="llm_output"),
         classes="panel", id="narrative")
 
-    def on_mount(self) -> None:
+    def on_mount(self):
         container = self.query_one(VerticalScroll)
         container.border_title = "Narrative"
 
-    def on_bottom_left_panel_update_uimessage(self, message: UpdateUIMessage) -> None:
+    def on_bottom_left_panel_update_uimessage(self, message):
         container = self.query_one(VerticalScroll)
         container.remove_children(selector='*')
 
@@ -178,16 +178,16 @@ class BottomRightPanel(HorizontalGroup):
     path = reactive([])
     explored_key_rooms = reactive([])
 
-    def compose(self) -> ComposeResult:
+    def compose(self):
         yield VerticalScroll(
             RichLog(highlight=True, markup=True, classes="textual_output"),
         classes="panel", id="logs")
 
-    def on_mount(self) -> None:
+    def on_mount(self):
         container = self.query_one(VerticalScroll)
         container.border_title = "History"
 
-    def watch_path(self, old_path, new_path) -> None:
+    def watch_path(self, new_path):
         if len(new_path) > 0:
             log = self.query_one(RichLog)
 
@@ -287,7 +287,7 @@ class DemoZeldagen(App):
         I have {self.health} hearts.
         """
 
-    def compose(self) -> ComposeResult:
+    def compose(self):
         yield Header()
         yield Grid(
         TopLeftPanel().data_bind(keys=DemoZeldagen.keys, health=DemoZeldagen.health, rupees=DemoZeldagen.rupees, map_found=DemoZeldagen.map_found),
@@ -297,9 +297,7 @@ class DemoZeldagen(App):
            classes="main")
         yield Footer()
 
-    def on_bottom_left_panel_answer_message(self, message: BottomLeftPanel.AnswerMessage) -> None:
-        print("Received", message.answer)
-
+    def on_bottom_left_panel_answer_message(self, message):
         health_line = message.answer.splitlines()[-2]
         rupees_line = message.answer.splitlines()[-1]
 
@@ -326,7 +324,7 @@ class DemoZeldagen(App):
         self.mutate_reactive(DemoZeldagen.choices)
         self.doing = "action"
 
-    def on_top_right_panel_picked_action_message(self, message: TopRightPanel.PickedActionMessage) -> None:
+    def on_top_right_panel_picked_action_message(self, message):
         room_to_go = int(re.sub('[^-\d]', '', self.choices[message.pick]))
 
         if und_dungeon.edges[self.path[-1], room_to_go]['locked']:
@@ -358,7 +356,7 @@ class DemoZeldagen(App):
         self.doing = "llm"
         self.llm_query = self.construct_llm_prompt()
 
-    def action_toggle_dark(self) -> None:
+    def action_toggle_dark(self):
         self.theme = ("textual-dark" if self.theme == "textual-light" else "textual-light")
 
 if __name__ == "__main__":
