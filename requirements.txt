@@ -1,0 +1,4 @@
+matplotlib==3.10.0
+networkx==3.4.2
+ollama==0.4.5
+textual==1.0.0
