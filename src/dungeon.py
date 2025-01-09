@@ -188,15 +188,16 @@ class Dungeon:
                 if (len(in_edges) + self.out_degree(node)) > 3:
                     value -= 15
 
-            # Reward criterion #1: more edges a node has, more that room is meaningful, but never more than 4 edges
             interconnection_factor = len(in_edges) + self.out_degree(node)
+            # Penalty criterion #5: there must be no nodes with more than 4 edges
             if interconnection_factor > 4:
-                value -= 25
+                value -= 15
             else:
-                value += interconnection_factor * 2
+                # Reward criterion #1: more edges a node has, more that room is meaningful
+                value += interconnection_factor
 
-                # Penalty criterion #5: we don't want to have too many "hub" rooms, they must be at most 1/5 of total number of rooms
-                if interconnection_factor > 4:
+                # Penalty criterion #6: we don't want to have too many "hub" rooms, they must be at most 1/5 of total number of rooms
+                if interconnection_factor >= 4:
                     hub_rooms_count += 1
                     if hub_rooms_count > (NUM_ROOMS // 5):
                         value -= 5
