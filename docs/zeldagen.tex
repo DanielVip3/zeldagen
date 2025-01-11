@@ -96,11 +96,11 @@ Una delle meccaniche più caratteristiche dei dungeon di Zelda è che le stanze 
 \subsection {Panoramica ed obiettivi}
 \textit{Zeldagen} è un progetto di generazione procedurale di topologie di dungeon Zelda-like, mediante l'utilizzo di algoritmi genetici (\textit{``gen"} da \textbf{gen}erativo e da \textbf{gen}etico).
 
-\noindent L'idea nasce dal fatto che, tradizionalmente, per ottenere esperienze di gameplay di qualità come quelle della saga videoludica The Legend of Zelda (che ha appassionato milioni di persone negli anni), i requisiti sulle sfide che vengono poste al giocatore sono stringenti: è particolarmente complicato ottenere un dungeon che risulti appagante e bilanciato, senza la progettazione umana.\\
+\noindent L'idea nasce dal fatto che, tradizionalmente, per ottenere esperienze di gameplay di qualità come quelle della saga videoludica The Legend of Zelda (che ha appassionato milioni di persone negli anni), i requisiti sulle sfide poste al giocatore sono stringenti: è particolarmente complicato ottenere un dungeon che risulti appagante e bilanciato, senza la progettazione umana.\\
 
 \noindent Difatti, in condizioni normali, tutti i videogiochi che utilizzano un sistema di generazione procedurale, tendono al \textbf{compromesso varietà vs. qualità}: per ottenere esperienze sempre differenti e mai noiose, si è spesso costretti a tralasciare un po' la qualità di tali esperienze.\\
 
-\noindent L'obiettivo del progetto è quindi di ottenere delle topologie di dungeon generate proceduralmente che risultino appaganti per un giocatore umano, allo scopo di poterlo integrare nello sviluppo di videogiochi ed ottenere esperienze sempre nuove e differenti, ma senza tralasciare la qualità.
+\noindent L'obiettivo del progetto è quindi di ottenere delle topologie di dungeon generate proceduralmente che risultino appaganti per un giocatore umano, allo scopo di poterlo integrare nello sviluppo di videogiochi ed ottenere esperienze sempre nuove e differenti, ma mantenendo comunque una elevata attenzione alla qualità.
 
 Ci sono ovviamente molti modi per ottenere questo risultato, ma la proposta di Zeldagen è l'utilizzo di un agente intelligente. La scelta è ricaduta su un algoritmo di IA poiché la conoscenza (personale e collettiva) dell'argomento non è così avanzata da avere euristiche che permettano una efficace ed efficiente generazione senza tanta sperimentazione --- in questo caso quindi è d'aiuto lo sperimentare ed esplorare lo spazio degli stati.
 
@@ -114,14 +114,14 @@ Lo scopo dell'agente intelligente sarà quindi generare una topologia di dungeon
 
 - \textbf{Performance}: la misura di prestazione è la generazione di dungeon risolvibili e quanto più vicini alle \textbf{metriche di validità e di successo} (descritte in seguito);\\
 - \textbf{Environment}: lo spazio dei possibili dungeon, in particolare è:\\
-\indent --- \textbf{completamente osservabile}: si ha accesso a tutte le caratteristiche che si desidera conoscere dei grafi, a patto di calcolarle (con relativi costi computazionali);\\
-\indent- \textbf{deterministico}: è l'agente a determinare come muoversi nell'ambiente;\\
+\indent - \textbf{parzialmente osservabile}: si ha accesso a tutte le caratteristiche che si desidera conoscere dei grafi della popolazione, a patto di calcolarle (con relativi costi computazionali), ma non di tutti i grafi dello spazio degli stati;\\
+\indent- \textbf{deterministico}: è l'agente a determinare come muoversi nell'ambiente (anche se l'agente opera con un certo grado di casualità);\\
 \indent- \textbf{episodico}: l'agente effettua azioni ``atomiche";\\
 \indent- \textbf{discreto}: anche se molto ampio, quindi complesso da esplorare tutto;\\
-\indent- \textbf{statico};\\
+\indent- \textbf{statico}: solo l'agente modifica l'ambiente;\\
 \indent- \textbf{a singolo agente};\\
 - \textbf{Actuators}: le possibili modifiche atomiche che l'agente può effettuare su un singolo grafo, in particolare modificando pesi dei nodi, pesi degli archi, o creando, rimuovendo e spostando archi. Non può aggiungere nodi, nel nostro specifico caso;\\
-- \textbf{Sensors}: le possibili informazioni che l'agente può determinare sul grafo, tra cui i nodi, gli archi, i pesi di ciascuno di essi, ed eventuali calcoli che può fare in base a questi ultimi (tra cui calcolare la \textbf{fitness}, determinarne la risolvibilità, la difficoltà e così via).
+- \textbf{Sensors}: le possibili informazioni che l'agente può determinare su un grafo, tra cui i nodi, gli archi, i pesi di ciascuno di essi, ed eventuali calcoli che può fare in base a questi ultimi (tra cui calcolare la \textbf{fitness}, determinarne la risolvibilità, la difficoltà e così via).
 
 \section{Progettazione}
 
@@ -165,7 +165,7 @@ Si noti che si tratta letteralmente di un \textit{percorso} in senso matematico 
 
 \noindent Si chiamerà \textbf{soluzione} un percorso che risolve il dungeon, rappresentato da una sequenza ordinata di nodi, dove il primo sarà sempre la stanza iniziale e l'ultimo la stanza finale:\\
 $\{v0, ..., v_n\} \text{ t.c. } \text{sia un percorso} \, \land \, n \geq 1 \, \land \, type(v_0) = S \, \land \, type(v_n) = F$.\\
-Nel contesto del documento, la soluzione migliore (col minor numero di stanze), sarà chiamata $S$.\\
+Nel contesto del documento, la miglior soluzione (col minor numero di stanze), sarà chiamata $S$.\\
 
 \noindent Seguendo quindi le definizioni appena date, il problema diventa equiparabile alla generazione di labirinti, con il vincolo aggiunto delle chiavi sia durante la generazione che durante il gioco.
 
@@ -179,7 +179,7 @@ Ciò che segue è frutto di una ricerca approfondita su ciò che concerne la gio
 \textbf{3v.} la stanza finale ha una sola porta, ed è sempre chiusa a chiave;\\
 \textbf{4v.} non ci sono stanze senza porte;\\
 \textbf{5v.} non ci sono stanze con più di 4 porte;\\
-\textbf{6v.} il dungeon è risolvibile (non si può restare bloccati, premettendo che il giocatore sia immortale).\\
+\textbf{6v.} il dungeon è risolvibile (non si può restare bloccati).\\
 
 \noindent Le seguenti metriche sono dette di \textbf{successo}, cioè determinano la buona qualità di un dungeon:\\
 \textbf{1s.} il numero di porte deve essere all'incirca il totale delle stanze + $\frac{1}{3}$:\\
@@ -207,11 +207,14 @@ $|\{v_i \in S \text{ t.c. } degree(v_i) = 4\}| \leq \frac{|V|}{5}$\\
 
 Il principale obiettivo è che il risultato sia prodotto in tempi ragionevoli per poterlo utilizzare nella generazione in tempo reale all'interno di un videogioco.
 
+\newpage
+
 \section{Soluzione}
 
 Come già discusso, si è optato per l'utilizzo di un \textbf{algoritmo genetico}, con tutte le scelte che comporta. Saranno ora dettagliatamente esaminate una ad una.
 
 \begin{figure}[h]
+    \setlength{\belowcaptionskip}{-5pt}
     \centering
     \includegraphics[width=0.65\linewidth]{assets/solution-example.png}
     \caption{Rappresentazione grafica di un individuo soluzione proposto.\\\textbf{Legenda:} S stanza iniziale, F finale, K chiave, N normale, L arco chiuso a chiave.}
@@ -225,7 +228,7 @@ Questo ha senso poiché la maggior parte della computazione viene estremamente s
 
 Ovviamente, è necessario convertire il grafo in uno non orientato quando si calcola la risolvibilità e si cerca un percorso soluzione, poiché nel contesto di un videogioco il dungeon è esplorato in modo non orientato. \\
 
-\noindent Per una questione di leggibilità del codice, si è preferito dichiarare gli individui come una classe \textit{Dungeon} con metodi specifici all'algoritmo genetico (es. fitness), permettendo però l'accesso a tutti i metodi diretti sul grafo tramite delegazione (quest'ultimo è gestito dalla libreria \textit{networkx}).
+\noindent Per una questione di leggibilità del codice, si è preferito dichiarare gli individui come una classe \textit{Dungeon} con metodi specifici all'algoritmo genetico (es. fitness), permettendo l'accesso a tutti i metodi diretti sul grafo tramite delegazione (quest'ultimo è gestito dalla libreria \textit{networkx}).
 
 \subsection {Fitness}
 
@@ -403,13 +406,14 @@ La prima considerazione che si vuole effettuare è la tecnica scelta. L'obiettiv
 
 I risultati ottenuti sono \textbf{ottimi}. Gli individui rappresentano quasi sempre ciò che si desidera ottenere, raggiungendo velocemente una fitness elevata.\\
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.75\linewidth]{assets/benchmark.png}
     \caption{Risultati dei benchmark}
 \end{figure}
 
-\noindent Come si può osservare in fig. 3 (sotto) dai benchmark prodotti e riesaminati con diversi seed sempre sulla stessa macchina, il risultato è già ottimo nelle prime 50 generazioni (avvicinandosi ad una fitness quasi massima), producendo l'ultimo miglioramento circa alla 23° generazione. Il tempo è molto basso, 1.5 secondi nel caso di 50 generazioni e 3.3 secondi con 100 generazioni.\\
+
+\noindent Come si può osservare in fig. 3, dai benchmark prodotti e riesaminati con diversi seed sempre sulla stessa macchina, il risultato è già ottimo nelle prime 50 generazioni (avvicinandosi ad una fitness quasi massima), producendo l'ultimo miglioramento circa alla 23° generazione. Il tempo è molto basso, 1.5 secondi nel caso di 50 generazioni e 3.3 secondi con 100 generazioni.\\
 
 \noindent Però, alla 144° generazione, si ottiene un ulteriore lieve miglioramento (circa 1 punto di fitness in più), arrivando a circa 8 secondi di esecuzione. Oltre la 144° generazione, non si ottengono miglioramenti, delineando la soglia delle 250 generazioni totali come (generalmente) la soglia che ottiene la massima qualità col minimo tempo.\\
 
