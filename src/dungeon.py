@@ -57,42 +57,42 @@ class Dungeon:
 
         self.fitness_cached = None
 
-    # Gets the shortest completion path of the dungeon (reaching the finish from the start, getting only the required keys)
-    def shortest_path_least_keys(
+    # Gets the shortest completion walk of the dungeon (reaching the finish from the start, getting only the required keys)
+    def shortest_walk_least_keys(
         self,
-        start,                  # the start node from which to compute the shortest path
+        start,                  # the start node from which to compute the shortest walk
         und_graph      = None,  # the undirected graph
         keys           = 0,     # the number of keys we've got at this point of the search
         excluded       = None,  # a set of nodes we excluded from exploring until now (we've already explored them, or they're dead ends)
         unlocked       = None,  # a set of edges we've already unlocked until now
         keys_taken     = None,  # a set of keys we've already taken (to avoid key loops)
-        path           = None   # an ordered list of nodes, representing the complete path until now
+        walk           = None   # an ordered list of nodes, representing the complete walk until now
     ):
         excluded = excluded or set()
         unlocked = unlocked or set()
         keys_taken = keys_taken or set()
-        path = path or []
+        walk = walk or []
 
-        shortest_path = None
-        for (u, v) in und_graph.edges(start): # tries all possible immediate paths from current room
+        shortest_walk = None
+        for (u, v) in und_graph.edges(start): # tries all possible immediate walks from current room
             if v in excluded: # ... except excluded ones
                 continue
 
             # u represents the source room, v the destination room
 
-            # we create clones of the state, for this specific branch (path tried)
+            # we create clones of the state, for this specific branch (walk tried)
             keys_branch = keys
             excluded_branch = set(excluded)
             unlocked_branch = set(unlocked)
             keys_taken_branch = set(keys_taken)
-            path_until_now_branch = list(path)
+            walk_until_now_branch = list(walk)
 
             edge_locked = und_graph[u][v]['locked'] # whether this edge is locked
             destination_room_type = und_graph.nodes[v]['type'] # the type of the destination room
 
-            # first, we'll have to check if the path is unlocked, otherwise nothing to do
+            # first, we'll have to check if the walk is unlocked, otherwise nothing to do
 
-            can_go = not edge_locked # whether the path's unlocked (we can proceed) or not
+            can_go = not edge_locked # whether the walk's unlocked (we can proceed) or not
             if not can_go: # if the edge is locked...
                 if (u, v) in unlocked: # ... we either unlocked it before
                     can_go = True
@@ -101,12 +101,12 @@ class Dungeon:
                     unlocked_branch.add((u, v)) # and we unlock it for later
                     can_go = True
 
-            if can_go: # if the path is unlocked, we can try to proceed from there
-                path_until_now_branch.append(v) # we proceed, by adding the destination room to the path
+            if can_go: # if the walk is unlocked, we can try to proceed from there
+                walk_until_now_branch.append(v) # we proceed, by adding the destination room to the walk
 
                 # if our destination room is the boss room, we've reached the end
                 if destination_room_type == Types.FINISH:
-                    return path_until_now_branch
+                    return walk_until_now_branch
 
                 # if our destination room is a key, we have one more key now, and it's
                 # a good idea to try backtracking (so we don't exclude the source room)
@@ -121,16 +121,16 @@ class Dungeon:
                 if und_graph.degree(v) <= 1:
                     excluded_branch.add(v)
 
-                # we get the shortest path now starting from the destination room
-                path_branch = self.shortest_path_least_keys(v, und_graph, keys_branch, excluded_branch, unlocked_branch, keys_taken_branch, path_until_now_branch)
-                if path_branch is None:
+                # we get the shortest walk now starting from the destination room
+                walk_branch = self.shortest_walk_least_keys(v, und_graph, keys_branch, excluded_branch, unlocked_branch, keys_taken_branch, walk_until_now_branch)
+                if walk_branch is None:
                     continue
 
-                # we update the final shortest path only if the path we found here was shorter
-                if shortest_path is None or len(path_branch) < len(shortest_path):
-                    shortest_path = path_branch
+                # we update the final shortest walk only if the walk we found here was shorter
+                if shortest_walk is None or len(walk_branch) < len(shortest_walk):
+                    shortest_walk = walk_branch
 
-        return shortest_path
+        return shortest_walk
 
     def clear_fitness_cache(self):
         self.fitness_cached = None
@@ -202,8 +202,8 @@ class Dungeon:
                     if hub_rooms_count > (NUM_ROOMS // 5):
                         value -= 5
 
-        # Calculating the shortest path solution to account for solvability, difficulty and linearity
-        solution = self.shortest_path_least_keys(ROOT, graph_und) # undirected graph because in real play you can go in any direction
+        # Calculating the shortest walk solution to account for solvability, difficulty and linearity
+        solution = self.shortest_walk_least_keys(ROOT, graph_und) # undirected graph because in real play you can go in any direction
 
         # Validity criterion #4: the dungeon is solvable
         if solution is None or len(solution) == 0:

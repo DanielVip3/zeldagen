@@ -236,7 +236,7 @@ La funzione di fitness deriva direttamente dalle \textbf{metriche di validità e
 \textbf{- criteri di penalità:} se non rispettati, la fitness è ridotta in base a un peso;\\
 \textbf{- criteri di premialità:} se rispettati, la fitness è incrementata in base a un peso.\\
 
-\noindent Per proseguire con la descrizione dei criteri, è importante far presente che per ciascun individuo valido viene calcolata una soluzione tramite l'algoritmo \textit{shortest path least keys} (approfondito nel successivo paragrafo).
+\noindent Per proseguire con la descrizione dei criteri, è importante far presente che per ciascun individuo valido viene calcolata una soluzione tramite l'algoritmo \textit{shortest walk least keys} (approfondito nel successivo paragrafo).
 
 Gli scopi di questa soluzione sono (a) verificare la risolvibilità del dungeon, (b) misurarne la difficoltà, (c) misurarne la non-linearità.
 
@@ -259,7 +259,7 @@ L'algoritmo non è rilevante al puro fine dell'agente intelligente, quindi l'app
     Validity \#1 & 1v & Il numero di stanze con tipo ``iniziale" deve essere $1$. & $= -100$ \\
     Validity \#2 & 2v & Il numero di stanze con tipo ``finale" deve essere $1$. & $= -100$ \\
     Validity \#3 & 3v & Il numero di archi entranti nella stanza di tipo ``finale" deve essere $1$, e di archi uscenti $0$. & $= -50$ \\
-    Validity \#4 & 6v & Deve essere stata trovata una qualunque soluzione mediante l'algoritmo \textit{shortest path least keys}. & $= -100$ \\
+    Validity \#4 & 6v & Deve essere stata trovata una qualunque soluzione mediante l'algoritmo \textit{shortest walk least keys}. & $= -100$ \\
     \parbox[c][1cm][t]{\dimexpr\linewidth-2\tabcolsep} {\vspace{0.05cm} La metrica 4v non ha corrispondente nella fitness poiché è garantita per il modo in cui è costruito e modificato il grafo. La metrica 5v è stata resa un \textit{criterio di penalità}.} & & & \\
     \end{tblr}
 \end{table}
@@ -298,20 +298,20 @@ L'algoritmo non è rilevante al puro fine dell'agente intelligente, quindi l'app
     \textbf{Criteri di premialità} & & & \\
     \textbf{Criterio} & \textbf{Metrica} & \textbf{Descrizione} & \textbf{Fitness} \\
     Reward \#1 & N/A & \textbf{Quantità di porte:} si aggiunge $1$ per ogni vicino di un nodo (sia entrante che uscente). & $+deg(v_i) \, , \, \forall v_i \in V$ \\
-    Reward \#2 & 3s & \textbf{Difficoltà bilanciata:} si aggiunge un quantitativo distribuito normalmente che segue il numero di stanze necessarie alla soluzione \textit{shortest path least keys} ($sp$ nella formula) rispetto alla metà del totale delle stanze. & $+5e^{-card(V)\left(\frac{\text{len(sp)} - \frac{card(V)}{2}}{\frac{card(V)}{2}}\right)^2}$
+    Reward \#2 & 3s & \textbf{Difficoltà bilanciata:} si aggiunge un quantitativo distribuito normalmente che segue il numero di stanze necessarie alla soluzione \textit{shortest walk least keys} ($sp$ nella formula) rispetto alla metà del totale delle stanze. & $+5e^{-card(V)\left(\frac{\text{len(sp)} - \frac{card(V)}{2}}{\frac{card(V)}{2}}\right)^2}$
  \\
-    Reward \#3 & 4s & \textbf{Non-linearità bilanciata:} si aggiunge un quantitativo distribuito normalmente che segue il \textit{fattore backtracking} ($bf$ nella formula, ossia il numero di stanze uniche ripetute nella soluzione \textit{shortest path least keys}) rispetto a $\frac{1}{4}$ del totale delle stanze. & $+5e^{-\frac{card(V)}{2}\left(\frac{bf - \frac{card(V)}{4}}{\frac{card(V)}{4}}\right)^2}$ \\
+    Reward \#3 & 4s & \textbf{Non-linearità bilanciata:} si aggiunge un quantitativo distribuito normalmente che segue il \textit{fattore backtracking} ($bf$ nella formula, ossia il numero di stanze uniche ripetute nella soluzione \textit{shortest walk least keys}) rispetto a $\frac{1}{4}$ del totale delle stanze. & $+5e^{-\frac{card(V)}{2}\left(\frac{bf - \frac{card(V)}{4}}{\frac{card(V)}{4}}\right)^2}$ \\
     Reward \#4 & 5s & \textbf{Ragionevolezza delle chiavi:} si aggiunge un quantitativo distribuito normalmente che segue il numero di stanze di tipo ``chiave" ($nkr$ nella formula) rispetto al numero di porte chiuse a chiave ($card(L)$). & $+5e^{-card(V)\left(\frac{nkr - card(L)}{card(L)}\right)^2}$ \\
     \end{tblr}
 \end{table}
 
 \noindent L'utilizzo delle distribuzioni normali nei criteri di premialità permette di assegnare un certo premio (definito principalmente dal peso per cui si moltiplica la distribuzione) in caso il criterio sia rispettato, sottraendo in modo \textbf{esponenziale} invece per chi non soddisfa tale criterio, andando quindi a penalizzare poco chi vi si avvicina e molto chi vi si allontana.\\
 
-\noindent Dati questi criteri, la fitness calcolata può essere utilizzata per la fase di selezione. Prima di procedere con le ulteriori scelte applicate per la realizzazione dell'algoritmo genetico, però, ci si soffermerà brevemente sull'algoritmo \textit{shortest path least keys} prodotto.
+\noindent Dati questi criteri, la fitness calcolata può essere utilizzata per la fase di selezione. Prima di procedere con le ulteriori scelte applicate per la realizzazione dell'algoritmo genetico, però, ci si soffermerà brevemente sull'algoritmo \textit{shortest walk least keys} prodotto.
 
-\subsubsection {Algoritmo shortest path least keys}
+\subsubsection {Algoritmo shortest walk least keys}
 
-\textit{Shortest path least keys} (nome ideato ad hoc per il problema in esame) è un algoritmo \textbf{ricorsivo} di \textbf{ricerca non informata}, simile alla \textbf{depth-first search}, che utilizza il \textbf{backtracking}, creato allo scopo di trovare il percorso soluzione ad un dungeon che sia più breve possibile, in termini di nodi del percorso, e che utilizzi il minor numero di chiavi possibile.\\
+\textit{Shortest walk least keys} (nome ideato ad hoc per il problema in esame) è un algoritmo \textbf{ricorsivo} di \textbf{ricerca non informata}, simile alla \textbf{depth-first search}, che utilizza il \textbf{backtracking}, creato allo scopo di trovare il percorso soluzione ad un dungeon che sia più breve possibile, in termini di nodi del percorso, e che utilizzi il minor numero di chiavi possibile.\\
 
 \noindent L'algoritmo prende in prestito diverse idee dalla DFS, come appunto la ricorsività ed il backtracking, ma anche dagli algoritmi greedy (favorendo in modo greedy il percorso più breve).
 
@@ -325,7 +325,7 @@ Inoltre, l'algoritmo necessita di poter accedere all'intero grafo, oltre che di 
 
 \noindent L'algoritmo opera esplorando tutti i nodi connessi a quello corrente (eccetto quelli già esplorati), e per ciascuno di essi effettua un ``tentativo" (definito \textit{``branch"} nel codice).
 
-Con ``tentativo" si intende che, se il nodo è raggiungibile, o se è chiuso a chiave ma si possiede almeno una chiave, si tenta di andare in quella direzione effettuando una chiamata ricorsiva che parte dalla nuova stanza, che ha lo scopo di trovare la shortest path a partire da quella (modificando di conseguenza le strutture dati, ad esempio rimuovendo una chiave se è stata utilizzata).
+Con ``tentativo" si intende che, se il nodo è raggiungibile, o se è chiuso a chiave ma si possiede almeno una chiave, si tenta di andare in quella direzione effettuando una chiamata ricorsiva che parte dalla nuova stanza, che ha lo scopo di trovare la shortest walk a partire da quella (modificando di conseguenza le strutture dati, ad esempio rimuovendo una chiave se è stata utilizzata).
 
 Il tentativo è locale, nel senso che le modifiche alle strutture dati avvengono solo per quel tentativo. Effettuati tutti i possibili tentativi, si prende quello che restituisce il percorso più breve.\\
 
@@ -419,7 +419,7 @@ I risultati ottenuti sono \textbf{ottimi}. Gli individui rappresentano quasi sem
 
 Allo stesso tempo, non è tutto solo un male: i risultati prodotti sono di buona qualità ed in tempi estremamente brevi, e questo era ciò che si desiderava ottenere.\\
 
-\noindent È interessante notare che la maggior parte del tempo di esecuzione è dovuto al calcolo della fitness, a causa dell'algoritmo \textit{shortest path least keys} e dell'\textit{algoritmo di Dijkstra}.
+\noindent È interessante notare che la maggior parte del tempo di esecuzione è dovuto al calcolo della fitness, a causa dell'algoritmo \textit{shortest walk least keys} e dell'\textit{algoritmo di Dijkstra}.
 
 \section{Note finali}
 
@@ -441,7 +441,7 @@ Il giocatore, invece, ha la possibilità di scegliere le porte da aprire tra le 
 
 \noindent Nonostante l'LLM funga da narratore interattivo, lo stato del gioco è gestito dal programma demo e non dall'LLM, per permettere un gioco coerente ed evitare allucinazioni o dimenticanze.
 
-Nello stato del gioco è compreso il cammino effettuato fino a un dato momento, le chiavi trovate, le porte sbloccate, la salute del giocatore, il possesso della mappa (avere la mappa comporta poter vedere una rappresentazione dell'intero grafo).
+Nello stato del gioco è compreso il percorso effettuato fino a un dato momento, le chiavi trovate, le porte sbloccate, la salute del giocatore, il possesso della mappa (avere la mappa comporta poter vedere una rappresentazione dell'intero grafo).
 
 Ad ogni azione del giocatore, una parte dello stato del gioco viene comunicata al LLM per permettere  coerenza nelle risposte.\\
 
