@@ -41,7 +41,7 @@ The `docs/assets` folder contains multiple images used in the documentation repo
 
 ## How to run it
 
-To run the project, you'll have to install [Python 3.10.6](https://www.python.org/downloads/release/python-3106/), and install all packages in [requirements.txt](requirements.txt) through pip.
+To run the project, you'll have to install [Python 3.10.6](https://www.python.org/downloads/release/python-3106/) and [Graphviz 12.2.1](https://graphviz.org/download/), then install all packages in [requirements.txt](requirements.txt) through pip.  
 
 If you only want to run the [genetic algorithm](./src/main.py) or the [benchmarks](./src/benchmark.py), you don't need to install anything else and can simply run them through the virtual environment with the Python interpreter.
 
